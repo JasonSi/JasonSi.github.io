@@ -1,0 +1,116 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="Mr. Almost"><title>Ruby语法糖：Enumerable方法inject/reduce | 杰森同学的碎碎念</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=0.1.0"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/normalize/7.0.0/normalize.min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/pure/1.0.0/pure-min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/pure/1.0.0/grids-responsive-min.css"><link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="//cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><link rel="alternate" type="application/atom+xml" href="/atom.xml"><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+ga('create','UA-113942183-1','auto');ga('send','pageview');</script></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">Ruby语法糖：Enumerable方法inject/reduce</h1><a id="logo" href="/.">杰森同学的碎碎念</a><p class="description">开始时捱一些苦，栽种绝处的花～</p></div><div id="nav-menu"><a class="current" href="/."><i class="fa fa-home"> 首页</i></a><a href="/archives/"><i class="fa fa-archive"> 归档</i></a><a href="/about/"><i class="fa fa-user"> 关于</i></a><a href="/history/"><i class="fa fa-book"> 历史</i></a><a href="/game/"><i class="fa fa-gamepad"> 游戏</i></a><a href="/atom.xml"><i class="fa fa-rss"> 订阅</i></a></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">Ruby语法糖：Enumerable方法inject/reduce</h1><div class="post-meta">Jul 28, 2016<span> | </span><span class="category"><a href="/categories/tech/">技术</a></span></div><a class="disqus-comment-count" href="/2016/07/28/17/#vcomment"><span class="valine-comment-count" data-xid="/2016/07/28/17/"></span><span>条评论</span></a><div class="clear"><div class="toc-article" id="toc"><div class="toc-title">文章目录</div><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#需求分析"><span class="toc-number">1.</span> <span class="toc-text">需求分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Array-inject使用方法"><span class="toc-number">2.</span> <span class="toc-text">Array#inject使用方法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#魔改重构"><span class="toc-number">3.</span> <span class="toc-text">魔改重构</span></a></li></ol></div></div><div class="post-content"><h2 id="需求分析"><a href="#需求分析" class="headerlink" title="需求分析"></a>需求分析</h2><p><del>并没有什么需求分析</del><br>依然是成绩订阅那个程序，自从我开始重构，我发现下面这个方法写的太恶心了，或者说，太java了。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">课程名</th>
+<th style="text-align:center">成绩</th>
+<th style="text-align:center">考试时间</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">A</td>
+<td style="text-align:center">90</td>
+<td style="text-align:center">20150721</td>
+</tr>
+<tr>
+<td style="text-align:center">B</td>
+<td style="text-align:center">92</td>
+<td style="text-align:center">20150723</td>
+</tr>
+<tr>
+<td style="text-align:center">C</td>
+<td style="text-align:center">90</td>
+<td style="text-align:center">20150729</td>
+</tr>
+<tr>
+<td style="text-align:center">D</td>
+<td style="text-align:center">97</td>
+<td style="text-align:center">20150801</td>
+</tr>
+<tr>
+<td style="text-align:center">E</td>
+<td style="text-align:center">95</td>
+<td style="text-align:center">20160121</td>
+</tr>
+<tr>
+<td style="text-align:center">F</td>
+<td style="text-align:center">88</td>
+<td style="text-align:center">20160121</td>
+</tr>
+<tr>
+<td style="text-align:center">G</td>
+<td style="text-align:center">90</td>
+<td style="text-align:center">20160125</td>
+</tr>
+<tr>
+<td style="text-align:center">H</td>
+<td style="text-align:center">85</td>
+<td style="text-align:center">20160721</td>
+</tr>
+<tr>
+<td style="text-align:center">I</td>
+<td style="text-align:center">85</td>
+<td style="text-align:center">20160721</td>
+</tr>
+<tr>
+<td style="text-align:center">J</td>
+<td style="text-align:center">80</td>
+<td style="text-align:center">20160921</td>
+</tr>
+<tr>
+<td style="text-align:center">K</td>
+<td style="text-align:center">90</td>
+<td style="text-align:center">20160921</td>
+</tr>
+</tbody>
+</table>
+<p>这是所有的考试成绩，以一个形如下面的Hash结构为元素，组成的一维数组</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[</span><br><span class="line">  &#123; <span class="symbol">name:</span> A, <span class="symbol">grade:</span> <span class="number">90</span>, <span class="symbol">date:</span> <span class="number">20150721</span> &#125;,</span><br><span class="line">  &#123; <span class="symbol">name:</span> B, <span class="symbol">grade:</span> <span class="number">92</span>, <span class="symbol">date:</span> <span class="number">20150723</span> &#125;,</span><br><span class="line">  &#123; <span class="symbol">name:</span> C, <span class="symbol">grade:</span> <span class="number">90</span>, <span class="symbol">date:</span> <span class="number">20150729</span> &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p>由于我订阅成绩通常只需要知道当前学期，而且计算GPA也是分学期计算，所以我需要把这些数据按学期分开来。<br>通常情况下，同一学期的考试都是在同一天，但考虑到有些同学挂科补考的情况，我必须要考虑到各种<del>客户的</del> 需求，有人问重修的怎么算？</p>
+<p><del>算你个球球</del> 算新学期的考试。</p>
+<p>所以我的任务是把这个一维数组，按照学期，变成一个二维数组，第一层是不同的学期，第二层是某学期的所有成绩列表。</p>
+<p>我把5.1~11.1之间的考试都当做是第二学期，因为有开学补考嘛。所以算法思路是，通过判断是否为第二学期，如果是将flag置为true，如果不是则置为false，于是循环的时候，前几个都是true，然后到E科目的时候，就变成了false，所以这时候判定到了新学期，把这个下标记录下来，放到res数组里，如此遍历一遍，就可以把转折点的下标记录到一个数组里。</p>
+<p>然后再根据res中每一个下标位置，用slice方法切割成绩数组，压入目标数组。</p>
+<p>于是写出来了下面这个我后来都看不懂的代码。</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">nest_with_date</span></span></span><br><span class="line">  res = []</span><br><span class="line">  z = <span class="number">0</span></span><br><span class="line">  second_semester = <span class="number">500</span>...<span class="number">1100</span></span><br><span class="line">  flag = <span class="literal">false</span></span><br><span class="line">  @guide_score_list.each <span class="keyword">do</span> <span class="params">|s|</span></span><br><span class="line">    z += <span class="number">1</span></span><br><span class="line">    date = s[<span class="symbol">:date</span>].slice(-<span class="number">4</span>..-<span class="number">1</span>).to_i</span><br><span class="line">    res &lt;&lt; (z - <span class="number">1</span>) <span class="keyword">unless</span> flag == second_semester.<span class="keyword">include</span>?(date)</span><br><span class="line">    flag = second_semester.<span class="keyword">include</span>?(date)</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line">  res &lt;&lt; z</span><br><span class="line">  res.length.times <span class="keyword">do</span> <span class="params">|i|</span></span><br><span class="line">    @score_list &lt;&lt; @guide_score_list.slice((i.zero? ? <span class="number">0</span> : res[i - <span class="number">1</span>])...res[i])</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<h2 id="Array-inject使用方法"><a href="#Array-inject使用方法" class="headerlink" title="Array#inject使用方法"></a>Array#inject使用方法</h2><p>于是我想到了最近看到的inject方法，就学习了一下姿势。<br>用法举例如下</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">list = [<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>]</span><br><span class="line">result = list.inject(<span class="number">7</span>) <span class="keyword">do</span> <span class="params">|res, obj|</span></span><br><span class="line">  res + obj</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line">result <span class="comment"># =&gt; 17</span></span><br></pre></td></tr></table></figure>
+<p>当inject加了参数，这个参数就是第一次迭代时res的初始值，此时res==7，obj==1，也就是第一个元素的值。</p>
+<p>执行res+obj，返回值为8，这个8赋值给res，obj指向下一个元素，也就是2</p>
+<p>执行res+obj，返回值为10，这个10赋值给res，obj指向下一个</p>
+<p>…</p>
+<p>以此类推</p>
+<p>最后迭代完毕时res值就是整个方法的返回值，赋值给result变量就行了。<br>如果inject没有传参数，那么res的初始值就是list的第一个元素值——1，obj指向第二个元素值——2，然后同上</p>
+<h2 id="魔改重构"><a href="#魔改重构" class="headerlink" title="魔改重构"></a>魔改重构</h2><figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">nest_with_date</span></span></span><br><span class="line">  <span class="comment"># Magic rather than readable</span></span><br><span class="line">  @score_list = @guide_score_list.inject([[@guide_score_list.first]]) <span class="keyword">do</span> <span class="params">|res, s|</span></span><br><span class="line">    <span class="keyword">next</span> res <span class="keyword">if</span> s == @guide_score_list.first</span><br><span class="line">    l = (<span class="number">5_01</span>...<span class="number">11_01</span>).<span class="keyword">include</span>?(res.last.last[<span class="symbol">:date</span>].slice(-<span class="number">4</span>..-<span class="number">1</span>).to_i)</span><br><span class="line">    n = (<span class="number">5_01</span>...<span class="number">11_01</span>).<span class="keyword">include</span>?(s[<span class="symbol">:date</span>].slice(-<span class="number">4</span>..-<span class="number">1</span>).to_i)</span><br><span class="line">    l ^ n ? res &lt;&lt; Array[s] : res.last &lt;&lt; s</span><br><span class="line">    res</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>原本14行代码被我强行魔改成6行，注释里还要写上拒绝可读性…<br>这个算法的思路就更清晰了，实际上算法没什么变化，只是强行吃口语法糖。</p>
+<p>我给res赋值了初始值，就是</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[[&#123; <span class="symbol">name:</span> A, <span class="symbol">grade:</span> <span class="number">90</span>, <span class="symbol">date:</span> <span class="number">20150721</span> &#125;]]</span><br></pre></td></tr></table></figure>
+<p><code>l</code>和<code>n</code>变量分别表示上一个成绩和当前这个成绩的日期是否在第二学期内</p>
+<p>当这两个值相等时则表示在同一个学期，就把这个数据压入最后一个学期的第二层</p>
+<p>当这两个值不等时则表示在不同的学期，要新开辟一个学期，所以把这个成绩包装成数组，压入第一层的尾部</p>
+<p>而<code>l ^ n</code>则表示异或关系，就不多说了。</p>
+<p>这样目的就达到了。</p>
+<p>人生苦短，我选Ruby～</p>
+</div><iframe src="/donate/?AliPayQR=/img/AliPayQR.jpg&amp;WeChatQR=/img/WeChatQR.jpg&amp;GitHub=null&amp;BTCQR=null&amp;BTCKEY=null&amp;PayPal=null" style="overflow-x:hidden; overflow-y:hidden; border:0xp none #fff; min-height:240px; width:100%;" frameborder="0" scrolling="no"></iframe><div class="tags"><a href="/tags/Ruby/">Ruby</a></div><div class="post-nav"><a class="pre" href="/2016/08/01/18/">从后端变成了前端</a><a class="next" href="/2016/07/27/16/">Ruby语法糖：将两个数组合并成一个哈希</a></div><div id="vcomment"></div><script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script><script src="//unpkg.com/valine@latest/dist/Valine.min.js"></script><script>var notify = 'false' == true ? true : false;
+var verify = 'false' == true ? true : false;
+var GUEST_INFO = ['nick','mail','link'];
+var guest_info = 'nick,mail'.split(',').filter(function(item){
+  return GUEST_INFO.indexOf(item) > -1
+});
+guest_info = guest_info.length == 0 ? GUEST_INFO :guest_info;
+window.valine = new Valine({
+  el:'#vcomment',
+  notify:notify,
+  verify:verify,
+  appId:'GdYXc7NL6OjXbEsEJpbupajS-gzGzoHsz',
+  appKey:'V1O9dvhLxl0T3bC1aVN9TrUC',
+  placeholder:'坐下说坐下说...',
+  avatar:'mm',
+  guest_info:guest_info,
+  pageSize:'10'
+})</script></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><form class="search-form" action="//www.google.com/search" method="get" accept-charset="utf-8" target="_blank"><input type="text" name="q" maxlength="20" placeholder="Search"/><input type="hidden" name="sitesearch" value="http://www.pujiaxun.com"/></form></div><div class="widget"><div class="widget-title"><i class="fa fa-folder-o"> 分类</i></div><ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/tech/">技术</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/life/">生活</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> 标签</i></div><div class="tagcloud"><a href="/tags/闲谈/" style="font-size: 15px;">闲谈</a> <a href="/tags/面试/" style="font-size: 15px;">面试</a> <a href="/tags/爬虫/" style="font-size: 15px;">爬虫</a> <a href="/tags/实习/" style="font-size: 15px;">实习</a> <a href="/tags/JavaScript/" style="font-size: 15px;">JavaScript</a> <a href="/tags/English/" style="font-size: 15px;">English</a> <a href="/tags/Git/" style="font-size: 15px;">Git</a> <a href="/tags/Ubuntu/" style="font-size: 15px;">Ubuntu</a> <a href="/tags/Ruby/" style="font-size: 15px;">Ruby</a> <a href="/tags/macOS/" style="font-size: 15px;">macOS</a> <a href="/tags/LaTeX/" style="font-size: 15px;">LaTeX</a> <a href="/tags/Web/" style="font-size: 15px;">Web</a> <a href="/tags/算法/" style="font-size: 15px;">算法</a> <a href="/tags/jQuery/" style="font-size: 15px;">jQuery</a> <a href="/tags/python/" style="font-size: 15px;">python</a> <a href="/tags/效率/" style="font-size: 15px;">效率</a> <a href="/tags/生活/" style="font-size: 15px;">生活</a> <a href="/tags/经济学/" style="font-size: 15px;">经济学</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> 最近文章</i></div><ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2018/02/09/47/">Chrome中sticky定位的导航栏产生1px缝隙</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/01/18/46/">我是如何提高生存效率的</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/11/10/45/">Neo4j & Python 构建中国行政区划图</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/09/13/43/">快速排序算法原来这么简单</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/09/01/42/">macOS 中文输入法时 VS Code 快捷键失效</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/08/25/41/">如何区别真假网址？</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/25/40/">Chrome焦点从地址栏回到页面中</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/30/39/">MacBook 的方向键太小，我已经戒了</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/04/13/37/">你真的会用Email和日历吗？</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/03/15/36/">从设计初衷解释 JavaScript 原型链</a></li></ul></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2018 <a href="/." rel="nofollow">杰森同学的碎碎念.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=0.1.0" async></script><script type="text/javascript" src="//cdn.bootcss.com/fancybox/3.2.5/jquery.fancybox.min.js" async></script><script type="text/javascript" src="/js/fancybox.js?v=0.1.0" async></script><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/fancybox/3.2.5/jquery.fancybox.min.css"><script type="text/javascript" src="/js/codeblock-resizer.js?v=0.1.0"></script><script type="text/javascript" src="/js/smartresize.js?v=0.1.0"></script></div></body></html>
